@@ -47,6 +47,15 @@ export const ContactSection = () => {
     };
 
     try {
+      if (!serviceId || serviceId === 'your_service_id' || !templateId || templateId === 'your_template_id' || !publicKey || publicKey === 'your_public_key') {
+        console.error('EmailJS Error: Environment variables (VITE_EMAILJS_SERVICE_ID, VITE_EMAILJS_TEMPLATE_ID, VITE_EMAILJS_PUBLIC_KEY) are missing or unconfigured.');
+        setStatus({
+          type: 'error',
+          text: 'Something went wrong. Please try again or contact me directly.'
+        });
+        return;
+      }
+
       await emailjs.send(serviceId, templateId, templateParams, publicKey);
       setStatus({
         type: 'success',
@@ -54,7 +63,10 @@ export const ContactSection = () => {
       });
       setFormState({ name: '', email: '', subject: '', message: '' });
     } catch (error) {
-      console.error('EmailJS Form Submit Error:', error);
+      const errorText = error?.text || error?.message || (typeof error === 'string' ? error : JSON.stringify(error));
+      const statusCode = error?.status || 'Error';
+      console.error(`EmailJS Send Operation Failed [${statusCode}]:`, errorText);
+
       setStatus({
         type: 'error',
         text: 'Something went wrong. Please try again or contact me directly.'
