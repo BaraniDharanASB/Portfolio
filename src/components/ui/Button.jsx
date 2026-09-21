@@ -10,7 +10,8 @@ export const Button = ({
   type = 'button',
   className = '',
   target = null,
-  rel = null
+  rel = null,
+  disabled = false
 }) => {
   const sizeClass = size !== 'md' ? `btn-${size}` : '';
   const classes = `btn btn-${variant} ${sizeClass} ${className}`.trim();
@@ -25,7 +26,7 @@ export const Button = ({
   }
 
   return (
-    <button type={type} className={classes} onClick={onClick}>
+    <button type={type} className={classes} onClick={onClick} disabled={disabled}>
       {Icon && <Icon size={size === 'sm' ? 14 : size === 'lg' ? 20 : 16} />}
       <span>{children}</span>
     </button>

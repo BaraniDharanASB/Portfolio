@@ -66,6 +66,13 @@
   box-sizing: border-box;
 }
 
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 .btn-primary {
   background: var(--accent-blue);
   color: #ffffff;

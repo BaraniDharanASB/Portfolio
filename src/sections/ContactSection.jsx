@@ -1,26 +1,67 @@
 import React, { useState } from 'react';
+import emailjs from '@emailjs/browser';
 import { SectionHeader } from '../components/ui/SectionHeader';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { personalDetails } from '../data/portfolioData';
-import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import { GithubIcon, LinkedinIcon } from '../components/ui/SocialIcons';
 
 export const ContactSection = () => {
   const [formState, setFormState] = useState({ name: '', email: '', subject: '', message: '' });
-  const [submitted, setSubmitted] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [status, setStatus] = useState(null); // { type: 'success' | 'error', text: string }
 
   const handleChange = (e) => {
     setFormState({ ...formState, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
+    setStatus(null);
+
+    const { name, email, subject, message } = formState;
+
+    if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
+      setStatus({ type: 'error', text: 'Please fill in all required fields.' });
+      return;
+    }
+
+    const emailRegex = /\S+@\S+\.\S+/;
+    if (!emailRegex.test(email)) {
+      setStatus({ type: 'error', text: 'Please enter a valid email address.' });
+      return;
+    }
+
+    setIsSending(true);
+
+    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+    const templateParams = {
+      from_name: name.trim(),
+      from_email: email.trim(),
+      subject: subject.trim(),
+      message: message.trim(),
+    };
+
+    try {
+      await emailjs.send(serviceId, templateId, templateParams, publicKey);
+      setStatus({
+        type: 'success',
+        text: "Message sent successfully! I'll get back to you soon."
+      });
       setFormState({ name: '', email: '', subject: '', message: '' });
-    }, 4000);
+    } catch (error) {
+      console.error('EmailJS Form Submit Error:', error);
+      setStatus({
+        type: 'error',
+        text: 'Something went wrong. Please try again or contact me directly.'
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -102,70 +143,83 @@ export const ContactSection = () => {
               Send a Message
             </h3>
 
-            {submitted ? (
-              <div style={{ background: 'var(--accent-emerald-glow)', border: '1px solid rgba(16,185,129,0.3)', padding: 'var(--spacing-xl)', borderRadius: 'var(--radius-md)', textAlign: 'center', color: 'var(--accent-emerald)' }}>
-                <CheckCircle size={36} style={{ margin: '0 auto 0.5rem auto' }} />
-                <h4 style={{ fontWeight: 700, marginBottom: '0.25rem' }}>Message Sent Placeholder</h4>
-                <p style={{ fontSize: 'var(--font-size-sm)' }}>Thank you for reaching out! Your form submission state is working correctly.</p>
+            {status && (
+              <div
+                style={{
+                  marginBottom: 'var(--spacing-lg)',
+                  padding: '0.85rem 1.1rem',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: 'var(--font-size-sm)',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  background: status.type === 'success' ? 'var(--accent-emerald-glow)' : 'rgba(239, 68, 68, 0.15)',
+                  border: status.type === 'success' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+                  color: status.type === 'success' ? 'var(--accent-emerald)' : '#f87171'
+                }}
+              >
+                {status.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+                <span>{status.text}</span>
               </div>
-            ) : (
-              <form className="contact-form" onSubmit={handleSubmit}>
-                <div className="form-group">
-                  <label className="form-label">Full Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    className="form-input"
-                    placeholder="Recruiter / Manager Name"
-                    value={formState.name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Email Address</label>
-                  <input
-                    type="email"
-                    name="email"
-                    className="form-input"
-                    placeholder="recruiter@company.com"
-                    value={formState.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Subject</label>
-                  <input
-                    type="text"
-                    name="subject"
-                    className="form-input"
-                    placeholder="Opportunity for Java Developer role"
-                    value={formState.subject}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Message</label>
-                  <textarea
-                    name="message"
-                    className="form-textarea"
-                    placeholder="Details about job opening or inquiry..."
-                    value={formState.message}
-                    onChange={handleChange}
-                    required
-                  ></textarea>
-                </div>
-
-                <Button type="submit" variant="primary" icon={Send} size="lg">
-                  Submit Message
-                </Button>
-              </form>
             )}
+
+            <form className="contact-form" onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  className="form-input"
+                  placeholder="Recruiter / Manager Name"
+                  value={formState.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <input
+                  type="email"
+                  name="email"
+                  className="form-input"
+                  placeholder="recruiter@company.com"
+                  value={formState.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Subject</label>
+                <input
+                  type="text"
+                  name="subject"
+                  className="form-input"
+                  placeholder="Opportunity for Java Developer role"
+                  value={formState.subject}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Message</label>
+                <textarea
+                  name="message"
+                  className="form-textarea"
+                  placeholder="Details about job opening or inquiry..."
+                  value={formState.message}
+                  onChange={handleChange}
+                  required
+                ></textarea>
+              </div>
+
+              <Button type="submit" variant="primary" icon={Send} size="lg" disabled={isSending}>
+                {isSending ? 'Sending...' : 'Submit Message'}
+              </Button>
+            </form>
           </Card>
         </div>
       </div>
